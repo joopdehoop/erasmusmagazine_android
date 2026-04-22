@@ -1,9 +1,13 @@
 package nl.erasmusmagazine.newsapp.view
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.recyclerview.widget.LinearLayoutManager
 import nl.erasmusmagazine.newsapp.R
 import nl.erasmusmagazine.newsapp.controller.MainController
@@ -16,7 +20,11 @@ import nl.erasmusmagazine.newsapp.util.NetworkFactory
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var controller: MainController
-    private val adapter = ArticleAdapter()
+    private lateinit var adapter: ArticleAdapter
+
+    private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updateToolbarSubtitle()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,15 +32,23 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val settingsRepository = SettingsRepository(this)
-        controller = MainController(settingsRepository) { language ->
-            ArticlesRepository(NetworkFactory.createWordPressApi(language))
+        controller = MainController(
+            settingsRepository = settingsRepository,
+            articlesRepository = ArticlesRepository(NetworkFactory.createWordPressApi())
+        )
+
+        adapter = ArticleAdapter { article ->
+            val customTabsIntent = CustomTabsIntent.Builder().build()
+            customTabsIntent.launchUrl(this, Uri.parse(article.url))
         }
 
         binding.articleRecycler.layoutManager = LinearLayoutManager(this)
         binding.articleRecycler.adapter = adapter
 
-        val prefs = controller.loadPreferences()
         configureMenu()
+        updateToolbarSubtitle()
+
+        val prefs = controller.loadPreferences()
         loadArticles(prefs.language)
 
         binding.swipeRefresh.setOnRefreshListener {
@@ -40,18 +56,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadArticles(controller.loadPreferences().language)
+    }
+
     private fun configureMenu() {
         binding.topAppBar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.menu_language -> showLanguageDialog()
-                R.id.menu_user -> showTextStub("Gebruiker-profiel volgt in volgende iteratie.")
-                R.id.menu_notifications -> {
-                    val prefs = controller.loadPreferences()
-                    controller.updatePush(!prefs.pushEnabled)
-                    showTextStub("Pushmeldingen: ${if (!prefs.pushEnabled) "aan" else "uit"}")
+                R.id.menu_user -> settingsLauncher.launch(Intent(this, UserActivity::class.java))
+                R.id.menu_notifications -> settingsLauncher.launch(Intent(this, NotificationSettingsActivity::class.java))
+                R.id.menu_tip_editor -> {
+                    val language = controller.loadPreferences().language
+                    TipEditorActivity.open(this, language.tipFormUrl)
                 }
-
-                R.id.menu_tip_editor -> showTextStub("Open straks webformulier: /tip-ons")
             }
             true
         }
@@ -59,12 +78,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLanguageDialog() {
         val options = arrayOf("Nederlands", "English")
+        val checkedItem = if (controller.loadPreferences().language == AppLanguage.ENGLISH) 1 else 0
+
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.menu_language))
-            .setItems(options) { _, which ->
+            .setSingleChoiceItems(options, checkedItem) { dialog, which ->
                 val language = if (which == 1) AppLanguage.ENGLISH else AppLanguage.DUTCH
                 controller.updateLanguage(language)
+                updateToolbarSubtitle()
                 loadArticles(language)
+                dialog.dismiss()
             }
             .show()
     }
@@ -79,12 +102,15 @@ class MainActivity : AppCompatActivity() {
             },
             onError = {
                 binding.swipeRefresh.isRefreshing = false
-                Toast.makeText(this, "Kon nieuws niet laden", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.error_loading_news), Toast.LENGTH_LONG).show()
             }
         )
     }
 
-    private fun showTextStub(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun updateToolbarSubtitle() {
+        val prefs = controller.loadPreferences()
+        val languageLabel = if (prefs.language == AppLanguage.ENGLISH) "English" else "Nederlands"
+        val user = prefs.userName?.takeIf { it.isNotBlank() } ?: getString(R.string.user_guest)
+        binding.topAppBar.subtitle = "$languageLabel • $user"
     }
 }

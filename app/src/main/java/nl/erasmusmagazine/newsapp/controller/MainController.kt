@@ -12,7 +12,7 @@ import nl.erasmusmagazine.newsapp.model.UserPreferences
 
 class MainController(
     private val settingsRepository: SettingsRepository,
-    private val articlesRepositoryFactory: (AppLanguage) -> ArticlesRepository
+    private val articlesRepository: ArticlesRepository
 ) {
     fun loadPreferences(): UserPreferences = settingsRepository.getPreferences()
 
@@ -35,7 +35,7 @@ class MainController(
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                articlesRepositoryFactory(language).loadArticles()
+                articlesRepository.loadArticles(language)
             }.onSuccess { articles ->
                 withContext(Dispatchers.Main) { onSuccess(articles) }
             }.onFailure { throwable ->

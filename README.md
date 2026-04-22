@@ -1,43 +1,36 @@
-# Erasmus Magazine Android (MVC structuur-opzet)
+# Erasmus Magazine Android (MVC)
 
-Dit is een **eerste structurele opzet** van een Android nieuwsapp voor Erasmus Magazine, met focus op MVC en uitbreidbaarheid.
+Android nieuwsapp voor Erasmus Magazine met MVC-structuur, tweetaligheid en een volledig werkend instellingenmenu.
 
-## Architectuurkeuze
+## Architectuur
 
-- **UI/Views:** `view/` (Activity + Adapter)
-- **Controllers:** `controller/` (interactie tussen view en repositories)
-- **Models:** `model/` (domeinmodellen zoals `Article`, `UserPreferences`, `AppLanguage`)
-- **Data laag:**
-  - `data/network/` voor WordPress REST API DTO's/interface
-  - `data/repository/` voor app-instellingen en artikeldata
-- **Utility:** `util/NetworkFactory` voor Retrofit op basis van taal
+- **Model:** `model/` (`Article`, `UserPreferences`, `AppLanguage`)
+- **View:** `view/` (`MainActivity`, adapters en settings-activiteiten)
+- **Controller:** `controller/` (`MainController`, `SettingsController`)
+- **Data:**
+  - `data/network/` (WordPress API en DTO's)
+  - `data/repository/` (artikelen + persistente instellingen)
 
-## Waarom REST API als basis
+## Features (geïmplementeerd)
 
-Voor de app is de WordPress REST API als primaire route gekozen omdat dit:
-1. een native, moderne UI mogelijk maakt;
-2. betere controle geeft over filtering, caching en notificaties;
-3. beter aansluit op meertaligheid (`/` en `/en` context) in eigen app-flow.
+1. **Backward compatible & modern UI**
+   - `minSdk = 24`
+   - Material 3, toolbar, swipe-to-refresh, cards
 
-Een WebView-fallback kan later per scherm toegevoegd worden (bijv. voor **Tip de redactie** formulierpagina).
+2. **Nieuws ophalen via WordPress REST API**
+   - Native rendering van artikel-lijst
+   - Openen van artikel in Custom Tabs
 
-## Ingebouwde feature-opzet
+3. **Tweetaligheid**
+   - Nederlands en Engels (`/en`) via taalafhankelijke API URL
+   - Persistente taalinstelling via `SharedPreferences`
 
-- Backward compatibility met moderne look:
-  - `minSdk = 24`
-  - Material 3 thema met klassieke View-systemen.
-- Taalkeuze met persistentie:
-  - opgeslagen via `SharedPreferences` in `SettingsRepository`.
-- Eigen app-menu met placeholders voor:
-  - Taal
-  - Gebruiker
-  - Pushmeldingen
-  - Tip de redactie
+4. **Eigen app-menu (werkend)**
+   - **Taal:** taalkeuze-dialoog
+   - **Gebruiker:** apart scherm om gebruikersnaam op te slaan
+   - **Pushmeldingen:** apart scherm met aan/uit switch
+   - **Tip de redactie:** formulierpagina in ingebouwde WebView-activiteit
 
-## Volgende iteratie (niet in deze structuur-opzet)
+## Opmerking
 
-1. Detailpagina voor artikel (in-app of Custom Tabs).
-2. Echte push-instellingen + Firebase Cloud Messaging.
-3. Formulierpagina "Tip de redactie" in WebView/Custom Tabs.
-4. Robuuste HTML parsing voor titelvelden vanuit WordPress `rendered` content.
-5. Unit tests en UI tests.
+Dit project gebruikt bewust klassieke Android Views + MVC (geen Compose/MVVM), omdat dat expliciet gevraagd is.

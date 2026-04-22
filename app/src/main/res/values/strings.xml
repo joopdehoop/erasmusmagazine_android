@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Erasmus Magazine</string>
+    <string name="menu_language">Taal</string>
+    <string name="menu_user">Gebruiker</string>
+    <string name="menu_notifications">Pushmeldingen</string>
+    <string name="menu_tip_editor">Tip de redactie</string>
+    <string name="title_articles">Nieuws</string>
+    <string name="action_retry">Opnieuw proberen</string>
+    <string name="action_save">Opslaan</string>
+    <string name="user_name_hint">Naam of alias</string>
+    <string name="notifications_enabled_label">Pushmeldingen inschakelen</string>
+    <string name="error_loading_news">Kon nieuws niet laden</string>
+    <string name="user_guest">Gast</string>
+</resources>
